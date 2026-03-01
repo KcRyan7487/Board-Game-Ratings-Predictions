@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bgg-rating-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bgg-rating-api
+  template:
+    metadata:
+      labels:
+        app: bgg-rating-api
+    spec:
+      containers:
+        - name: bgg-rating-container
+          image: bgg-rating-app:k8s
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
