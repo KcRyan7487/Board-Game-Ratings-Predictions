@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Compile check
+        run: |
+          python -m compileall .
+
+  deploy-heroku:
+    # Only deploy on direct pushes to main (not PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Build and push Docker image to Heroku Container Registry
+        run: |
+          if [ -z "$HEROKU_API_KEY" ] || [ -z "$HEROKU_APP_NAME" ]; then
+            echo "Missing required secrets: HEROKU_API_KEY and/or HEROKU_APP_NAME"
+            exit 1
+          fi
+
+          docker login --username=_ --password="$HEROKU_API_KEY" registry.heroku.com
+          docker build -t registry.heroku.com/$HEROKU_APP_NAME/web .
+          docker push registry.heroku.com/$HEROKU_APP_NAME/web
+
+      - name: Release web process on Heroku
+        run: |
+          heroku container:release web --app "$HEROKU_APP_NAME"

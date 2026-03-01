@@ -1,0 +1,8 @@
+{
+  "feature_columns": [
+    "mech_roll_spin_and_move",
+    "GameWeight",
+    "Cat_War",
+    "YearPublished"
+  ]
+}
