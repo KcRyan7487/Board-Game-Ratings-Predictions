@@ -45,6 +45,14 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
+      - name: Ensure Heroku app uses container stack
+        run: |
+          if [ -z "$HEROKU_API_KEY" ] || [ -z "$HEROKU_APP_NAME" ]; then
+            echo "Missing required secrets: HEROKU_API_KEY and/or HEROKU_APP_NAME"
+            exit 1
+          fi
+          heroku stack:set container --app "$HEROKU_APP_NAME"
+
       - name: Build and push Docker image to Heroku Container Registry
         run: |
           if [ -z "$HEROKU_API_KEY" ] || [ -z "$HEROKU_APP_NAME" ]; then
